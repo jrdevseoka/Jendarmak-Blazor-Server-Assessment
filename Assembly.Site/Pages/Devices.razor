@@ -1,0 +1,98 @@
+@page "/devices"
+@inject IDeviceService DeviceLogic
+@using System.ComponentModel.DataAnnotations
+<PageTitle>Devices | Jendamark Assembly Site</PageTitle>
+<div class="py-8 mx-auto max-w-2xl lg:py-16">
+    <h2 class="mb-1 text-xl font-bold text-jendamark-blue-500">
+        Add New Device
+    </h2>
+    @if (FormProccessed)
+    {
+        @if (IsDeviceCreated)
+        {
+           <SuccessAlert Message="@Message"/>
+        }
+        @if (!IsDeviceCreated)
+        {
+           <ErrorAlert Message="@Message"/>
+        }
+        FormProccessed = false;
+    }
+    <EditForm Model="Device" OnValidSubmit="Create">
+        <DataAnnotationsValidator />
+        <div class="grid gap-4">
+            <div class="sm:col-span-2 sm:grid-cols-2 sm:gap-6">
+                <label class="block mb-2 text-base font-medium text-jendamark-blue-500" for="deviceName">Device
+                    Name:</label>
+                <InputText
+                    class="bg-gray-50 border border-gray-300 text-jendamark-gray-600 text-sm 
+                block w-full p-2.5 rounded-lg focus:ring-jendamark-blue-500 focus:ring-offset-2 focus:border-jendamark-blue-500"
+                    id="deviceName" DisplayName="Device name" @bind-Value="Device.Name" />
+                <ValidationMessage class="mt-2 text-sm text-red-600 font-bold" For="() => Device.Name" />
+            </div>
+            <div class="w-full">
+                <label class="block mb-2 text-base font-medium text-jendamark-blue-500" for="deviceType">Device
+                    Type:</label>
+                <InputSelect @bind-Value="Type"
+                    class="bg-gray-50 border border-gray-300 text-jendamark-gray-600 text-sm 
+                block w-full p-2.5 rounded-lg focus:ring-jendamark-blue-500 focus:ring-offset-2 focus:border-jendamark-blue-500">
+                    <option selected>Select Device Type</option>
+                    @foreach (var type in DeviceTypes)
+                    {
+                        <option value="@type.Key">@type.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage class="mt-2 text-sm text-red-600 font-bold" For="() => Type"/>
+                <Button Text="Add Device" Type="submit"
+                    Class="inline-flex items-center px-5 py-2.5 mt-4 
+                sm:mt-6 text-sm font-bold text-center rounded-lg bg-jendamark-blue-700 text-white focus:ring-4
+                focus:ring-jendamark-blue-400 focus:ring-offset-2 active:bg-jendamark-blue-300 transition-colors: duration-200" />
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    public bool IsDeviceCreated { get; set; }
+    public bool FormProccessed { get; set; }
+    public string Message { get; set; }
+    public Device Device { get; set; }
+    [Required(ErrorMessage = "Select a Valid Device Type")]
+    public string Type { get; set; } = string.Empty;
+    public IReadOnlyList<DeviceType> DeviceTypes { get; set; }
+    protected override void OnInitialized()
+    {
+        FormProccessed = false;
+        Device = new Device();
+        DeviceTypes = DeviceLogic.GetDeviceTypes();
+        base.OnInitialized();
+    }
+    public void Create()
+    {
+        FormProccessed = true;
+        Device.DeviceType = MapSelectedTypeToEnum(Type, Device.DeviceType);
+        var response = DeviceLogic.Create(Device);
+        IsDeviceCreated = response.Succeeded;
+        Message = response.Message;
+    }
+    private EDeviceType MapSelectedTypeToEnum(string type, EDeviceType enumType)
+    {
+        if (type == "0")
+        {
+            return EDeviceType.BarcodeScanner;
+        }
+        if (type == "2")
+        {
+            return EDeviceType.Printer;
+        }
+        if (type == "1")
+        {
+            return EDeviceType.Camera;
+        }
+        if (type == "3")
+        {
+            return EDeviceType.SocketTray;
+        }
+        return enumType;
+    }
+}

@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components
+{
+    .jendamark-input-label {
+        @apply block mb-2 text-sm font-medium text-jendamark-blue-500
+    }
+    .jendamark-input-control
+    {
+       @apply bg-gray-50 border border-gray-300 text-jendamark-gray-600 text-sm rounded-lg focus:ring-4 focus:ring-jendamark-blue-600 focus:border-jendamark-blue-500 block w-full p-2.5
+    }
+    .jendamark-table-number-pagination {
+        @apply flex items-center justify-center px-3 h-8 ms-0 leading-tight text-jendamark-gray-400 border hover:bg-jendamark-blue-300 hover:text-jendamark-blue-700 hover:text-base
+    }
+}

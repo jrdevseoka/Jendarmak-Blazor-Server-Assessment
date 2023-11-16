@@ -1,0 +1,152 @@
+@inject IOperationService OperationService
+@inject IDeviceService DeviceService
+@inject IJSRuntime JSInterop
+
+
+@if (Operations != null)
+{
+    @if (Clicked)
+    {
+        @if (Succeeded)
+        {
+            <SuccessAlert Message="@Message" />
+        }
+        else
+        {
+            @if (Processed)
+            {
+                <ErrorAlert Message="@Message" />
+            }
+        }
+    }
+    <table class="w-full text-sm text-left text-gray-500  rtl:text-right">
+        <thead class="text-xs text-jendamark-gray-700 uppercase bg-gray-50">
+            <tr class="">
+                <th scope="col" class="px-6 py-3">Name</th>
+                <th scope="col" class="px-6 py-3">Piority</th>
+                <th scope="col" class="px-6 py-3">Image</th>
+                <th scope="col" class="px-6 py-3">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var operation in FilteredOperations)
+            {
+                <tr class="bg-white border-b hover:bg-jendamark-blue-300">
+                    <th scope="row" class="px-6 py-6 font-medium text-jendamark-blue-800 whitespace-nowrap">
+
+                        <div class="">
+                            <div> @operation.Name</div>
+                            <div class="font-normal text-gray-500"><span>Device:</span>@operation.Device.Name</div>
+                        </div>
+                    </th>
+                    <td class="px-6 py-4">@operation.OrderInWhichToPerform</td>
+                    <td class="px-6 py-4">
+                        <img src="data:image/png;base64,@Convert.ToBase64String(@operation.ImageData)" class="w-auto h-10"
+                            alt="Operation Image">
+                    </td>
+                    <td class="flex items-center border-none px-6 py-4">
+                        <a href="javscript:void(0)" @onclick="() => OpenEditOperationModal(operation)"
+                            class="font-medium text-blue-600">Edit</a>
+                        <a href="javascript:void(0)" class="font-medium text-red-600 dark:text-red-500 hover:underline ms-3"
+                            @onclick="() => RemoveItem(operation)">Remove</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <nav class="flex items-center flex-col flex-wrap md:flex-row justify-between pt-4" aria-label="Table navigation">
+        <span class="text-sm font-normal text-jendamark-gray-400
+                    mb-4 md:mb-0 block w-full md:inline md:w-auto">
+            Showing
+            <span class="text-jendamark-blue-800 font-semibold">@CurrentPage - @TotalPages</span> of <span
+                class="text-jendamark-blue-800 font-semibold">@Operations.Count</span>
+        </span>
+        <ul class="inline-flex -space-x-px rtl:space-x-reverse text-sm h-8">
+            <li class="@(CurrentPage == 1 ? "disabled" : "")">
+                <a href="javascript:void(0);" class="flex items-center justify-center
+                            px-3 h-8 ms-0 leading-tight text-jendamark-gray-400 border rounded-s-lg
+                             hover:bg-jendamark-blue-300 hover:text-jendamark-blue-700 hover:text-base"
+                    @onclick="() => ChangePage(CurrentPage - 1)" aria-label="Previous">Previous</a>
+            </li>
+            @for (int i = 1; i <= TotalPages; i++)
+            {
+                <li class="jendamark-table-number-pagination @(i == CurrentPage ? "jendamark-table-active-pagination active:text-jendamark-blue-400" : "")"
+                    @onclick="() => ChangePage(i)">
+                    @i</li>
+            }
+            <li class="@(CurrentPage == TotalPages ? "disabled" : "")">
+                <a class="flex items-center justify-center
+                            px-3 h-8 ms-0 leading-tight text-jendamark-gray-400 border rounded-e-lg
+                             hover:bg-jendamark-blue-300 hover:text-jendamark-blue-700 hover:text-base">Next</a>
+            </li>
+        </ul>
+    </nav>
+    <EditOperationModal DeviceName="@DeviceName" Operation="@Operation" @ref="@EditModal" />
+}
+else
+{
+    <EmptyState ButtonText="Add Operations" Message="There are no operations available to view" Route="operations" />
+}
+@code
+{
+    [Parameter]
+    public List<Operation> Operations { get; set; }
+    public List<Operation> FilteredOperations { get; set; }
+    public Device Device { get; set; }
+    public string DeviceName { get; set; }
+    private int CurrentPage { get; set; } = 1;
+    private int SIZE = 5;
+    public string Message { get; set; }
+    public bool Succeeded { get; set; }
+    public bool Clicked;
+    public bool Processed;
+    public Operation Operation;
+    public EditOperationModal EditModal = default!;
+    private int TotalPages => (int)Math.Ceiling(Operations.Count / (double)SIZE);
+    protected override void OnInitialized()
+    {
+        Processed = false;
+        Clicked = false;
+        Operations = OperationService.GetOperations().Collections;
+        FilterOperations();
+        base.OnInitialized();
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if(!firstRender)
+        {
+            Operations = OperationService.GetOperations().Collections;
+        }
+        base.OnAfterRender(firstRender);
+    }
+    public Device GetDevice(int id) => DeviceService.GetDeviceById(id).Item;
+    public void ChangePage(int page)
+    {
+        CurrentPage = Math.Max(1, Math.Min(page, TotalPages));
+        FilterOperations();
+    }
+    public void RemoveItem(Operation operation)
+    {
+        Processed = true;
+        Clicked = true;
+        var response = OperationService.Delete(operation);
+        FilterOperations();
+        Message = response.Message;
+        Succeeded = response.Succeeded;
+    }
+    public void FilterOperations()
+    {
+
+        var startIndex = (CurrentPage - 1) * SIZE;
+        FilteredOperations = Operations.Skip(startIndex).Take(SIZE).ToList();
+    }
+
+    public async Task OpenEditOperationModal(Operation operation)
+    {
+        Operation = operation;
+        DeviceName = Operation.Device.Name;
+        Device = Operation.Device;
+        await JSInterop.InvokeVoidAsync("openEditFormOperationModal");
+    }
+
+}

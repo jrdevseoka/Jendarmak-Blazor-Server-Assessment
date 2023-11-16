@@ -1,0 +1,130 @@
+@inject IDeviceService DeviceService
+
+<PageTitle>
+    Devices | Jendamark Assembly Site
+</PageTitle>
+<div class="relative overflow-hidden">
+    <div
+        class="flex flex-row transition duration-500 items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4">
+        <div>
+            <h5 class="text-xl text-jendamark-blue-500 mr-3  font-semibold">
+                Manage Devices
+            </h5>
+            <p class="text-jendamark-gray-300">View all your existing devices</p>
+        </div>
+    </div>
+    <div class="overflow-hidden">
+        @if (DeviceResponse?.Collections?.Count > 0)
+        {
+
+            <table class="w-full text-sm text-left text-gray-500  rtl:text-right">
+                <thead class="text-xs text-jendamark-gray-700 uppercase bg-gray-50">
+                    <tr class="">
+                        <th scope="col" class="px-6 py-3">Name</th>
+                        <th scope="col" class="px-6 py-3">Type</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var device in FilteredDevices)
+                    {
+                        <tr class="bg-white border-b hover:bg-jendamark-blue-300">
+                            <th scope="row" class="px-6 py-6 font-medium text-jendamark-blue-800 whitespace-nowrap">
+
+                                <div class="">
+                                    <div> @device.Name</div>
+                                </div>
+                            </th>
+                            <td class="px-6 py-4">@SplitDeviceType(device.DeviceType.ToString())</td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <nav class="flex items-center flex-col flex-wrap md:flex-row justify-between pt-4" aria-label="Table navigation">
+                <span class="text-sm font-normal text-jendamark-gray-400
+                    mb-4 md:mb-0 block w-full md:inline md:w-auto">
+                    Showing
+                    <span class="text-jendamark-blue-800 font-semibold">@CurrentPage - @TotalPages</span> of <span class="text-jendamark-blue-800 font-semibold">@Devices.Count</span>
+                </span>
+                <ul class="inline-flex -space-x-px rtl:space-x-reverse text-sm h-8">
+                    <li class="@(CurrentPage == 1 ? "disabled" : "")">
+                        <a href="javascript:void(0);" class="flex items-center justify-center
+                            px-3 h-8 ms-0 leading-tight text-jendamark-gray-400 border rounded-s-lg
+                             hover:bg-jendamark-blue-300 hover:text-jendamark-blue-700 hover:text-base"
+                        @onclick="() => ChangePage(CurrentPage - 1)" aria-label="Previous">Previous</a>
+                    </li>
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        <li class="jendamark-table-number-pagination @(i == CurrentPage ? "jendamark-table-active-pagination active:text-jendamark-blue-400" : "")"
+                        @onclick="() => ChangePage(i)">
+                            @i
+                        </li>
+                    }
+                    <li class="@(CurrentPage == TotalPages ? "disabled" : "")">
+                        <a class="flex items-center justify-center
+                            px-3 h-8 ms-0 leading-tight text-jendamark-gray-400 border rounded-e-lg
+                             hover:bg-jendamark-blue-300 hover:text-jendamark-blue-700 hover:text-base">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+        else
+        {
+            <EmptyState Message="There is no devices in the inventory." />
+        }
+    </div>
+</div>
+
+
+@code
+{
+    public QueryItemsResponse<Device> DeviceResponse { get; set; }
+    public List<Device> Devices { get; set; }
+    public List<DeviceType> Types { get; set; }
+    public List<Device> FilteredDevices { get; set; }
+    private int CurrentPage { get; set; } = 1;
+    private int SIZE = 5;
+    private int TotalPages => (int)Math.Ceiling(Devices.Count / (double)SIZE);
+    protected override void OnInitialized()
+    {
+        DeviceResponse = DeviceService.GetDevices();
+        Devices = DeviceResponse.Collections;
+        FilterDevices();
+        base.OnInitialized();
+    }
+    public void FilterDevices()
+    {
+        var startIndex = (CurrentPage - 1) * SIZE;
+        FilteredDevices = Devices.Skip(startIndex).Take(SIZE).ToList();
+    }
+    public void ChangePage(int page)
+    {
+        CurrentPage = Math.Max(1, Math.Min(page, TotalPages));
+        FilterDevices();
+    }
+    public string SplitDeviceType(string name)
+    {
+        return DeviceService.SplitNameConcat(name);
+    }
+    public string GetDeviceTypeById(int id)
+    {
+        if (id == (int)EDeviceType.BarcodeScanner)
+        {
+            return SplitDeviceType(EDeviceType.BarcodeScanner.ToString());
+        }
+        if (id == (int)EDeviceType.Printer)
+        {
+            return SplitDeviceType(EDeviceType.Printer.ToString());
+        }
+        if (id == (int)EDeviceType.Camera)
+        {
+            return SplitDeviceType(EDeviceType.Camera.ToString());
+        }
+        if (id == (int)EDeviceType.SocketTray)
+        {
+            return SplitDeviceType(EDeviceType.SocketTray.ToString());
+        }
+        return string.Empty;
+    }
+}

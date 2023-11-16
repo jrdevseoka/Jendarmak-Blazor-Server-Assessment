@@ -1,0 +1,124 @@
+@inject IOperationService OperationService
+@inject IDeviceService DeviceService
+@inject IJSRuntime JSInterop
+<div id="edit-operation-modal" tabindex="-1" aria-hidden="true"
+    class="hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 md:w-1/2 sm:w-full h-screen mx-auto">
+        <div class="relative bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                <h3 class="text-lg font-semibold text-jendamark-blue-600">
+                    Update Device For Operation
+                </h3>
+                <button @onclick="Close" type="button"
+                    class="text-jendamark-blue-400 bg-transparent hover:bg-jendamark-blue-200 hover:text-jendamark-blue-700 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center"
+                    data-modal-toggle="edit-operation-modal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <EditForm class="p-8 md:p-5" Model="Operation" OnValidSubmit="Update">
+                <DataAnnotationsValidator />
+                <div class="grid gap-4 grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="name" class="block mb-2 text-sm font-medium text-jendamark-blue-500">Name</label>
+                        <InputText disabled id="name" @bind-Value="Operation.Name"
+                            class="bg-gray-200 border border-gray-300 text-jendamark-gray-600 text-sm rounded-lg block w-full p-2.5 disabled:disabled" />
+                        <ValidationMessage For="() => Operation.Name" />
+                    </div>
+                    <div class="col-span-2">
+                        <label for="device"
+                            class="block mb-2 text-sm font-medium text-jendamark-blue-500">Device:</label>
+                        <InputSelect @bind-Value="DeviceName" id="device"
+                            class="bg-gray-50 border border-gray-300 text-jendamark-gray-600 text-sm rounded-lg focus:ring-4 focus:ring-jendamark-blue-600 focus:border-jendamark-blue-500 block w-full p-2.5">
+                            <option selected>@DeviceName</option>
+                            @if (Devices != null)
+                            {
+                                @foreach (var device in Devices)
+                                {
+                                    <option value="@device.DeviceID">@device.Name</option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => DeviceName" />
+                    </div>
+                </div>
+                <button type="submit"
+                    class="text-white inline-flex my-4 items-center bg-jendamark-blue-500 hover:bg-jendamark-blue-800 focus:ring-4 focus:outline-none focus:ring-jendamark-blue-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    <svg class="me-1 -ms-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd"
+                            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                    Update Operation
+                </button>
+                @if (FormProcessed)
+                {
+                    @if (Succeeded)
+                    {
+                        <SuccessAlert Message="@Message" />
+                    }
+                    else
+                    {
+                        <ErrorAlert Message="@Message" />
+                    }
+                }
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string ButtonText { get; set; }
+    [Parameter] public string DeviceName { get; set; }
+    [Parameter] public Operation Operation { get; set; }
+    public bool FormProcessed { get; set; }
+    private Device Device;
+    public bool Succeeded;
+    public List<Device> Devices;
+    public QueryItemsResponse<Device> DeviceResponse { get; set; }
+    public string Message;
+
+    public EditContext EditContext;
+
+    protected override void OnInitialized()
+    {
+        Operation = new Operation();
+        DeviceResponse = DeviceService.GetDevices();
+        Devices = DeviceResponse.Collections;
+        FormProcessed = false;
+        base.OnInitialized();
+    }
+    public void Update()
+    {
+        Operation.Device = GetNewOperationDevice();
+        var response = OperationService.Update(Operation);
+        Message = response.Message;
+        Succeeded = response.Succeeded;
+        FormProcessed = true;
+        StateHasChanged();
+    }
+    public async Task Close()
+    {
+
+        await JSInterop.InvokeVoidAsync("closeEditFormOperation");
+    }
+    private Device GetNewOperationDevice()
+    {
+        foreach(var device in Devices)
+        {
+            if(device.DeviceID.ToString() == DeviceName || device.Name == DeviceName)
+            {
+                Device = device;
+                return Device;
+            }
+        }
+        return Device;
+    }
+}

@@ -1,0 +1,40 @@
+﻿@page "/"
+@inject IDeviceService DeviceService
+@inject IOperationService OperationService
+
+<PageTitle>Home | Jendamark Assembly Site</PageTitle>
+
+<div class="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+    
+    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm 2xl:col-span-2">
+        <OperationTable Operations="Operations"/>
+    </div>
+    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <DeviceTable />
+    </div>
+</div>
+
+@code
+{
+    public string Message { get; set; }
+    public bool Succeeded { get; set; }
+    public string DeviceType { get; set; }
+    public IReadOnlyList<Device> Devices { get; set; }
+    public List<Operation> Operations { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var response = DeviceService.GetDevices();
+        var operations = OperationService.GetOperations();
+        Operations = operations.Collections;
+        Devices = response.Collections?.AsReadOnly();
+        Succeeded = response.Succeeded;
+        Message = response.Message;
+
+        base.OnInitialized();
+    }
+    private string FormatDeviceTypeName(string name)
+    {
+        return DeviceService.SplitNameConcat(name);
+    }
+}

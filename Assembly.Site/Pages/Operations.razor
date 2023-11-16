@@ -1,0 +1,109 @@
+@page "/operations"
+@inject IJSRuntime JSInterop
+@using System.ComponentModel.DataAnnotations
+
+
+<PageTitle>Operations | Jendmark Assembly Site</PageTitle>
+
+<div class="relative overflow-hidden">
+    <div
+        class="flex flex-row transition duration-500 items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4">
+        <div>
+            <h5 class="text-xl text-jendamark-blue-500 mr-3  font-semibold">
+                Manage Operations
+            </h5>
+            <p class="text-jendamark-gray-300">Manage all your existing operations</p>
+        </div>
+        <button @onclick="OpenOperationModel" id="activate-operations-button" data-modal-toggle="add-operations-modal"
+            data-modal-target="add-operations-modal"
+            class="flex items-center justify-center px-4 py-2 text-sm font-medium 
+        text-white rounded-lg bg-jendamark-blue-600 hover:bg-jendamark-blue-700 focus:ring-jendamark-blue-400 focus:ring-4 focus:outline-none focus:ring-offset-1">
+            <svg class="w-6 h-6 mr-2 -ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+            Add Operation
+        </button>
+    </div>
+    <div class="overflow-x-auto">
+        @if (OperationResponse.Succeeded)
+        {
+            <OperationTable />
+        }
+        else
+        {
+            <EmptyState Message="There are no operations available to view" ButtonText="Add Operations"
+                Route="operations" />
+        }
+
+    </div>
+    <OperationModal Devices="Devices" @ref="Modal" ModalHeader="Create Operations" />
+</div>
+
+
+@code
+{
+    [Inject]
+    private IDeviceService DeviceService { get; set; }
+    [Inject]
+    private IOperationService OperationService { get; set; }
+
+    public QueryItemsResponse<Operation> OperationResponse;
+
+    public List<Device> Devices { get; set; }
+    public List<Operation> AssemblyOperations { get; set; }
+    public OperationModal Modal = default!;
+    public Operation Operation;
+    public bool FormProcessed;
+    public bool Succeeded;
+    public string Message = string.Empty;
+    public int DeviceId;
+    public void Create()
+    {
+        Operation.OrderInWhichToPerform = GetOperationPiority(OperationResponse);
+        Operation.Device = DeviceService.GetDeviceById(DeviceId).Item;
+        var response = OperationService.Create(Operation);
+        
+        Message = response.Message;
+        Succeeded = response.Succeeded;
+        FormProcessed = true;
+        StateHasChanged();
+    }
+    private int GetOperationPiority(QueryItemsResponse<Operation> operation)
+    {
+        if(operation.Collections != null)
+        {
+            return operation.Collections.Count + 1;
+        }
+        return 1;
+    }
+
+    protected override void OnInitialized()
+    {
+        var response = OperationService.GetOperations();
+        
+        var responses = DeviceService.GetDevices();
+        Devices = responses.Collections;
+        Operation = new Operation();
+        OperationResponse = response;
+        base.OnInitialized();
+    }
+    public async Task ImageUploadHandler(InputFileChangeEventArgs eventArgs)
+    {
+        var file = eventArgs.File;
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffer);
+        Operation.ImageData = buffer;
+    }
+    private static byte[] ConvertImageUploadToByte(byte[] image)
+    {
+        return image;
+    }
+    private async Task OpenOperationModel()
+    {
+        var response = DeviceService.GetDevices();
+        Devices = response.Collections;
+        await JSInterop.InvokeVoidAsync("openOperationModal", DeviceId);
+    }
+}

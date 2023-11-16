@@ -1,0 +1,21 @@
+@inject IJSRuntime JSInterop
+
+<nav id="topNavigation" class="topNavigation">
+    <div class="expandMenuIcon">
+        <button id="menu-button" class="menu-button" @onclick="ExpandSidebar">
+            <i class="expandSidebar">Expand</i>
+        </button>
+        <div class="logo">
+            <img src="images/logo.svg" class="logo-image" />
+        </div>
+    </div>
+</nav>
+
+
+@code
+{
+    private async Task ExpandSidebar()
+    {
+        await JSInterop.InvokeVoidAsync("expandSidebar");
+    }
+}
