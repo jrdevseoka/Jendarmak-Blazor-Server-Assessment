@@ -20,7 +20,8 @@ Razor components.
 
 Clone the project repository from the version control system (Git). Use the following command in your terminal or Git Bash:
 
-```bash git clone https://github.com/jrdevseoka/Jendarmak-Blazor-Server-Assessment.git
+```bash
+git clone https://github.com/jrdevseoka/Jendarmak-Blazor-Server-Assessment.git
 ```
 
 ### 2. Navigate to the Project Folder
