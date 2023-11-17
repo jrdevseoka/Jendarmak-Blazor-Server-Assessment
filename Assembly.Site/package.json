@@ -11,7 +11,7 @@
   "main": "tailwind.config.js",
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:css": "npx tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.min.css --watch"
   },
   "browser": {
     "flowbite/interop": "./Scripts/flowbite-interop.js"
