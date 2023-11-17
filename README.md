@@ -52,10 +52,12 @@ npm install tailwindcss
 
 Run the script using
 
-```bash npm run build:css
+```bash
+npm run build:css
 ```
 
 ### 6. Run the Application
 
-```bash dotnet run
+```bash
+dotnet run
 ```
